@@ -11,40 +11,65 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 
+		// Parametres de la partie
 		PlayerConnector.baseUrl = "https://domi-nation.grooptown.com";
 		int playerCount = 2;
 		int maxTurnToPlay = 28;
 
+		// Creation de la partie
 		PlayerConnector[] playerConnectors = new PlayerConnector[playerCount];
-
 		Game newGame = PlayerConnector.createNewGame(playerCount);
 
+		// Creation des joueurs
 		for (int i = 0; i < playerConnectors.length; i++) {
 			playerConnectors[i] = new PlayerConnector(newGame.getUuid());
 			playerConnectors[i].joinGame("Chevre " + i);
 		}
 
-		Parametres p = new Parametres(0, 2, false, true, true, false); // on cree les parametres du concours (2 ia,
-																		// regles bonus activées)
+		// Creation des parametres et de l'IA
+		Parametres p = new Parametres(0, 2, false, true, true, false);
 		IA chevre = new IA(p);
 
-		// les 4 premiers moves = choisir dominos initiaux
+		// Pour les 4 premiers moves = choisir dominos avec max couronnes
 		for (int i = 0; i < 4; i++) {
+
 			GameState gameState = PlayerConnector.getGameState(newGame.getUuid());
 			PlayerConnector playerConnector = getCurrentPlayerConnector(playerConnectors, gameState);
-			playerConnector.playMove(0);
+			AvailableMoves m = playerConnector.getAvailableMove();
+			Move[] moves = m.getMoves();
+
+			int Maxcouronnes = 0;
+			int MoveToMake = 0;
+			for (int j = 0; j < moves.length; j++) {
+				if (moves[j].getChosenDomino().getTile1().getCrowns() > Maxcouronnes) {
+					Maxcouronnes = moves[j].getChosenDomino().getTile1().getCrowns();
+					MoveToMake = j;
+				}
+				if (moves[j].getChosenDomino().getTile2().getCrowns() > Maxcouronnes) {
+					Maxcouronnes = moves[j].getChosenDomino().getTile2().getCrowns();
+					MoveToMake = j;
+				}
+			}
+			playerConnector.playMove(MoveToMake);
+			System.out.println("Played Move : " + MoveToMake);
+			System.out.println("Contains : " + Maxcouronnes);
+
 		}
 
+		// Pour tous les moves restants
+		// Compteur de fois que le move chevre a ete selectionne
 		int Counter = 0;
 
 		for (int i = 4; i < maxTurnToPlay; i++) {
 
+			Thread.sleep(1000);
+
 			System.out.println("");
-			System.out.println("TURN : "+i);
-			String Player = playerConnectors[0].getPlayer().getName();
-			System.out.println("Player : "+Player);
+			System.out.println("TURN : " + i);
+			String Player = playerConnectors[maxTurnToPlay % 2].getPlayer().getName();
+			System.out.println("Player : " + Player);
 			System.out.println("");
-			
+
 			// on recupere l'etat de la partie et on recree le plateau et les pioches
 			GameState gameState = PlayerConnector.getGameState(newGame.getUuid());
 			PlayerConnector playerConnector = getCurrentPlayerConnector(playerConnectors, gameState);
@@ -57,7 +82,7 @@ public class Main {
 			Plateau plateau = new Plateau(my_kingdom, p);
 			Pioche manche_actuelle = new Pioche(gameState.getPreviousDraft());
 			Pioche manche_suivante = new Pioche(gameState.getCurrentDraft());
-			
+
 			plateau.print();
 			manche_actuelle.print();
 			manche_suivante.print();
@@ -75,11 +100,9 @@ public class Main {
 			// Format : position[0],position[1],position[2],position[3]
 			// x domino 1 , y domino 1, x domino 2, y domino 2
 
-			
-			
 			int[] domino = new int[5];
 
-			if( i < maxTurnToPlay-4) {
+			if (i < maxTurnToPlay - 4) {
 				domino = chevre.getDomino();
 			}
 			int[] GoldenMove = new int[9];
@@ -130,30 +153,26 @@ public class Main {
 				MoveOnline[5] = j;
 				ListeComparaison.add(MoveOnline);
 
-
 			}
 			System.out.println("");
 
 			Random rand = new Random();
 			int GoldenNumber = rand.nextInt(L);
 
-			loop:
-			for (int k = 0; k < L; k++) {
+			loop: for (int k = 0; k < L; k++) {
 				int[] MoveToCompare = ListeComparaison.get(k);
 
 				System.out.println("MoveToCompare " + k + " :");
 				System.out.println(MoveToCompare[0] + " " + MoveToCompare[1] + " " + MoveToCompare[2] + " "
 						+ MoveToCompare[3] + " | " + MoveToCompare[4]);
 				System.out.println("GoldenMove :");
-				System.out.println((GoldenMove[0]-4) + " " + (GoldenMove[1]-4) + " " + (GoldenMove[2]-4) + " "
-						+ (GoldenMove[3]-4) + " | " + GoldenMove[4]);
+				System.out.println((GoldenMove[0] - 4) + " " + (GoldenMove[1] - 4) + " " + (GoldenMove[2] - 4) + " "
+						+ (GoldenMove[3] - 4) + " | " + GoldenMove[4]);
 				System.out.println("");
-				
-				if (MoveToCompare[0] == GoldenMove[0]-4 
-				 && MoveToCompare[1] == GoldenMove[1]-4
-				 && MoveToCompare[2] == GoldenMove[2]-4
-				 && MoveToCompare[3] == GoldenMove[3]-4
-				 && MoveToCompare[4] == GoldenMove[4]-4     ) {
+
+				if (MoveToCompare[0] == (GoldenMove[0] - 4) && MoveToCompare[1] == (GoldenMove[1] - 4)
+						&& MoveToCompare[2] == (GoldenMove[2] - 4) && MoveToCompare[3] == (GoldenMove[3] - 4)
+						&& MoveToCompare[4] == (GoldenMove[4] - 4)) {
 					GoldenNumber = MoveToCompare[5];
 					System.out.println("CHANGED");
 					System.out.println("CHANGED");
@@ -178,20 +197,23 @@ public class Main {
 
 			gameState = PlayerConnector.getGameState(newGame.getUuid());
 
+			System.out.println("");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+			System.out.println("ENDED");
+
 		}
 
 	}
 
-	/**
-	 * Gets the Player that should play the current Turn. If not found, return null.
-	 * 
-	 * @param playerConnectors
-	 *            All player Connectors.
-	 * @param gameState
-	 *            State of the Game.
-	 * @return The Player that should play the current Turn. If not found, return
-	 *         null.
-	 */
 	private static PlayerConnector getCurrentPlayerConnector(PlayerConnector[] playerConnectors, GameState gameState)
 			throws Exception {
 		for (PlayerConnector playerConnector : playerConnectors) {
